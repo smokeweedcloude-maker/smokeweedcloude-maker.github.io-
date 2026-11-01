@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Тест по истории</title>
+<style>
+:root{
+  --bg:#eef1f4; --card:#ffffff; --ink:#14202b; --mute:#5a6978; --line:#cfd7de;
+  --acc:#0f5e63; --accink:#ffffff; --ok:#1b7a43; --okbg:#e3f4e9; --bad:#b3261e; --badbg:#fbe7e5; --sel:#e2f0f1;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0f1519; --card:#18212a; --ink:#e8edf1; --mute:#93a1ae; --line:#2b3946;
+    --acc:#5fc0c5; --accink:#0b1a1c; --ok:#58c98a; --okbg:#14301f; --bad:#ff8a80; --badbg:#3a1a18; --sel:#173238;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font:17px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  padding:16px 14px 40px;
+}
+main{max-width:720px;margin:0 auto}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;color:var(--mute);font-size:15px;margin-bottom:8px}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:16px}
+.bar>i{display:block;height:100%;background:var(--acc);width:0;transition:width .25s}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 16px}
+.q{font-size:19px;font-weight:600;line-height:1.4;margin:0 0 6px}
+.hint{color:var(--mute);font-size:14.5px;margin:0 0 14px}
+.note{color:var(--mute);font-size:14px;font-style:italic;margin:0 0 12px}
+.opts{display:flex;flex-direction:column;gap:9px;margin-top:14px}
+.opt{
+  display:flex;gap:12px;align-items:flex-start;text-align:left;width:100%;
+  min-height:52px;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;
+  background:var(--card);color:var(--ink);font:inherit;cursor:pointer;
+}
+.opt:focus-visible,.btn:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.opt:hover:not(:disabled){border-color:var(--acc)}
+.mark{flex:none;width:22px;height:22px;border:2px solid var(--line);border-radius:50%;margin-top:1px;display:grid;place-items:center;font-size:14px;font-weight:700;line-height:1}
+.multi .mark{border-radius:6px}
+.opt.sel{background:var(--sel);border-color:var(--acc)}
+.opt.sel .mark{border-color:var(--acc);background:var(--acc);color:var(--accink)}
+.opt.sel .mark::after{content:"✓"}
+.opt.ok{background:var(--okbg);border-color:var(--ok)}
+.opt.ok .mark{background:var(--ok);border-color:var(--ok);color:#fff}
+.opt.ok .mark::after{content:"✓"}
+.opt.bad{background:var(--badbg);border-color:var(--bad)}
+.opt.bad .mark{background:var(--bad);border-color:var(--bad);color:#fff}
+.opt.bad .mark::after{content:"✕"}
+.opt.miss{border-color:var(--ok);border-style:dashed;background:var(--card)}
+.opt.miss .mark{border-color:var(--ok);color:var(--ok)}
+.opt.miss .mark::after{content:"✓"}
+.opt:disabled{cursor:default}
+.tag{display:block;font-size:13px;color:var(--ok);margin-top:2px}
+.rows{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+.row{border:1.5px solid var(--line);border-radius:10px;padding:10px 12px}
+.row.ok{background:var(--okbg);border-color:var(--ok)}
+.row.bad{background:var(--badbg);border-color:var(--bad)}
+.row .l{font-weight:600;margin-bottom:6px}
+select,input[type=text]{
+  width:100%;font:inherit;color:var(--ink);background:var(--card);
+  border:1.5px solid var(--line);border-radius:8px;padding:10px;min-height:46px;
+}
+.fix{font-size:14.5px;color:var(--ok);margin-top:6px}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.btn{
+  font:inherit;font-weight:600;border:0;border-radius:10px;padding:13px 20px;min-height:48px;cursor:pointer;
+  background:var(--acc);color:var(--accink);
+}
+.btn.alt{background:transparent;color:var(--acc);border:1.5px solid var(--acc)}
+.btn:disabled{opacity:.45;cursor:default}
+.verdict{margin-top:14px;font-weight:700}
+.verdict.ok{color:var(--ok)}
+.verdict.bad{color:var(--bad)}
+.final h1{font-size:26px;margin:0 0 6px}
+.final p{margin:4px 0;color:var(--mute)}
+.big{font-size:44px;font-weight:700;line-height:1.1;margin:10px 0 2px;color:var(--ink)}
+@media (prefers-reduced-motion:reduce){.bar>i{transition:none}}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+/* Типы вопросов:
+   single — один верный ответ (a — номер верного варианта, с нуля)
+   multi  — несколько верных (a — список номеров)
+   match  — соответствие (pairs — пары [слева, справа])
+   num    — ввод числа (a — строка) */
+const QUESTIONS = [
+  {t:"single", q:"Полоцкая епархия была создана в:", o:["988 г.","992 г.","1005 г.","1054 г.","1161 г."], a:1},
+  {t:"single", q:"Религия, возникшая в I веке в Иудее —", o:["ислам","христианство","индуизм","буддизм","конфуцианство"], a:1},
+  {t:"single", q:"Религия, возникшая в VII веке в Аравии —", o:["ислам","буддизм","индуизм","даосизм","христианство"], a:0},
+  {t:"single", q:"Совершенно бесправной категорией населения на белорусских землях являлись:", o:["смерды","бояре","купцы","ремесленники","холопы"], a:4},
+  {t:"single", q:"Первый епископ в Полоцкой епархии:", o:["Илья","Кирилл","Мина","Фома","Исидор"], a:2},
+  {t:"single", q:"В Византийской империи главой церкви был:", o:["архиепископ Рима","патриарх Константинополя","Папа Римский","митрополит Карфагена","аббат Святой Софии"], a:1},
+  {t:"single", q:"На белорусских землях в X–XIII вв. во главе епархии стоял(-о):", o:["епископ","князь","совет старейшин","староста","вече"], a:0},
+  {t:"single", q:"Первое историческое название славян:", o:["склавины","анты","венеды","сарматы","готы"], a:2},
+  {t:"single", q:"Олег захватил власть в Киеве и создал Древнерусское государство в:", o:["862 г.","872 г.","882 г.","892 г.","900 г."], a:2},
+  {t:"single", q:"Большинство населения на белорусских землях в IX–XIII вв. составляли:", o:["крестьяне","духовенство","князья","купцы","дружинники"], a:0},
+  {t:"single", q:"Первый епископ в Туровской епархии:", o:["Илья","Кирилл","Мина","Фома","Исидор"], a:3},
+  {t:"single", q:"Первым известным нам полоцким князем считается:", o:["Ярослав","Изяслав","Всеслав","Рогволод","Владимир"], a:3},
+  {t:"single", q:"Крест Евфросинии Полоцкой был изготовлен в:", o:["1101 г.","1005 г.","1127 г.","1054 г.","1161 г."], a:4},
+  {t:"single", q:"Пункты сбора дани — это:", o:["погосты","полюдье","реконкиста","посад","крестовые походы"], a:0},
+  {t:"single", q:"Битва на реке Немиге с полоцким князем ________ и киевскими князьями, сыновьями Ярослава Мудрого, состоялась 3 марта 1067 г.", o:["Брячислав","Всеслав","Рогволод","Юрий Ярославович","Владимир"], a:1},
+  {t:"single", q:"В Западной Европе наследственное земельное владение, пожалованное господином своему подчинённому за службу, — это:", o:["волока","бенефиций","феод","поместье","надел"], a:2},
+  {t:"single", q:"Первый христианский полоцкий князь:", o:["Изяслав","Всеслав","Рогволод","Юрий Ярославович","Владимир"], a:0},
+  {t:"single", q:"На юге белорусских земель проживали племена:", o:["балтов","дреговичей","радимичей","кривичей","волынян"], a:1},
+  {t:"single", q:"Основание Тевтонского ордена в Иерусалиме в:", o:["1204 г.","1096 г.","1099 г.","1203 г.","1198 г."], a:4},
+  {t:"single", q:"Первым правителем Священной Римской империи стал:", o:["Хлодвиг","Карл Великий","Юстиниан","Василий I","Оттон I"], a:4},
+  {t:"single", q:"Для взаимопомощи и защиты своих интересов купцы объединялись в:", o:["ополчения","цехи","общины","гильдии","концерны"], a:3},
+  {t:"single", q:"Высший орган власти у славян, в котором могли принимать участие все взрослые свободные мужчины, — это:", o:["совет старейшин","капище","дружина","вече","совет племени"], a:3},
+  {t:"single", q:"Яков Полочанин участвовал в битве:", o:["на о. Дурбе","под Шавли (Шауляем)","на р. Неве","на Чудском озере","под Грюнвальдом"], a:2},
+
+  {t:"multi", q:"Определите правильные утверждения относительно распространения христианства на белорусских землях в конце X–XIII в.:", o:["отсутствовали епархии","самый известный монастырь на белорусских землях — Спасский монастырь","активно строились церкви и монастыри","князь Изяслав вошёл в историю как князь-книжник","киевская митрополия подчинялась папе римскому"], a:[1,2,3]},
+  {t:"multi", q:"Определите правильные утверждения относительно политического развития Полоцкого княжества в начале XII в.:", o:["прекращение деятельности веча в городах","ослабление центральной княжеской власти","расцвет княжества","тесные связи между землями княжества","существовала династия Изяславовичей"], a:[1,4]},
+  {t:"multi", q:"Укажите тенденции политического, социально-экономического и духовного развития цивилизаций Европы и Азии в Раннем и Высоком средневековье:", o:["раскол христианской церкви на католическую и православную","господство мануфактурного производства в Западной Европе","постепенное превращение свободных земледельцев в зависимых землепользователей","создание варварских королевств","утверждение мировоззрения гуманизма"], a:[0,2,3]},
+  {t:"multi", q:"Определите верные утверждения относительно развития общества и экономики белорусских земель в Высокое средневековье:", o:["постепенно ремесло отделилось от сельского хозяйства","города превращались в административные центры","самым древним и самым крупным из них был Туров","на территории Беларуси к началу X в. было свыше 30 городов","развитию торговли способствовали международные торговые пути"], a:[0,1,4]},
+  {t:"multi", q:"Определите правильные утверждения относительно распространения христианства на белорусских землях в конце X–XIII в.:", o:["сочетание христианства и язычества получило название двоеверия","митрополит подчинялся папе римскому","первая епархия появилась в Турове","имя первого туровского епископа — Фома","Евфросиния Полоцкая занималась переписыванием книг"], a:[0,3,4]},
+  {t:"multi", q:"Определите правильные утверждения относительно хозяйственного развития белорусских земель в IX — середине XIII в.:", o:["отсутствовали ремёсла","население проживало соседскими общинами","господствовало пашенное земледелие","основа экономики — рыболовство","господствовало натуральное хозяйство"], a:[1,2,4]},
+  {t:"multi", q:"Определите характерные черты феодализма в Западной Европе в Высоком средневековье:", o:["формирование исключительно на основе первобытных отношений","преобладание свободных земледельцев среди населения","существование поземельной и личной зависимости крестьян от феодалов","наличие феодальной иерархии","широкое развитие корпоративных организаций"], a:[2,3,4]},
+  {t:"multi", q:"Определите верные утверждения относительно развития общества и экономики белорусских земель в IX–XIII вв.:", o:["Высшее положение в обществе занимали крестьяне","На территории Скандинавии, Древней Руси, Польши, Чехии, где не было античного влияния, феодализм формировался бессинтезным путём","В раннем и Высоком средневековье существовала феодальная раздробленность","В Европе в Высоком средневековье существовало только два сословия","Принадлежность человека к сословию определялась по сроку службы, перейти в другое сословие он мог при получении нового звания"], a:[1,2]},
+  {t:"multi", q:"Определите характерные черты развития культуры белорусских земель в XI–XIII вв.:", o:["распространяются летописи","строительство замков-кастелей","Туровское евангелие, созданное в XI в.","распространяются агиографические произведения","закрепление стиля барокко в архитектуре"], a:[0,2,3]},
+  {t:"multi", q:"К положительным последствиям раздробленности относится:", o:["освоение новых торговых путей","разрушение городов","развитие местных ремёсел","прекращение культурных связей","благоустройство отдельных княжеств"], a:[0,2,4]},
+  {t:"multi", q:"Определите религиозных просветителей на белорусских землях в XII веке.", o:["Изяслав","Евфросиния Полоцкая","Нестор Печерский","Кирилл Туровский","Авраамий Смоленский"], a:[1,3]},
+  {t:"multi", q:"Определите правильные утверждения относительно распространения христианства на территории Беларуси в X–XIII вв.", o:["создана независимая от Константинопольской патриархии церковь","отсутствовали монастыри","формировалась церковная организация","были созданы Полоцкая и Туровская епархии","церковь подчинялась Папе Римскому"], a:[2,3]},
+  {t:"multi", q:"Определите правильные утверждения относительно хозяйственного развития белорусских земель в IX — середине XIII в.:", o:["главным занятием населения было бортничество","господствовало товарное хозяйство","население занималось охотой и рыболовством","создавались ремесленные цехи","простые вещи, необходимые в повседневной жизни, изготавливались в каждом доме"], a:[2,4]},
+  {t:"multi", q:"Определите правильные утверждения, используя картосхему «Государственность на белорусских землях в XI в.»", note:"В оригинале к вопросу прилагалась картосхема.", o:["города Витебск и Усвяты отошли к Полоцкому княжеству согласно договору между полоцким и киевским князем","часть белорусских земель входила в состав Киевского княжества","Полоцкое княжество занимало север белорусских земель","Волынское княжество входило в состав Полоцкого княжества","в состав Киевского княжества входило Полоцкое княжество"], a:[0,1,2]},
+  {t:"multi", q:"Определите верные утверждения относительно развития общества и экономики белорусских земель в IX–XIII вв.:", o:["Высшее положение в обществе занимали бояре","наиболее широкий слой населения составляли свободные общинники — «люди»","К началу XIII в. на белорусских землях происходил постепенный переход от родоплеменных отношений к феодальным","На смену пашенному земледелию пришло подсечно-огневое","В IX–XI вв. на белорусских землях сосуществовали два экономических уклада"], a:[1,2]},
+  {t:"multi", q:"Выберите примеры полоцкой архитектурной школы.", o:["церковь в честь Параскевы Пятницы","Борисоглебская (Коложская) церковь","Большой собор Бельчицкого монастыря","Каменецкая башня","церковь Рождества Богородицы"], a:[0,2]},
+  {t:"multi", q:"Укажите тенденции политического, социально-экономического и духовного развития цивилизаций Европы и Азии в Раннем и Высоком средневековье:", o:["создание варварских королевств","переход к производящему хозяйству","рост городов и увеличение численности городского населения в Европе","начало освобождения крестьян от крепостной зависимости","формирование феодальной иерархии"], a:[0,2,4]},
+  {t:"multi", q:"К политическим причинам раздробленности относятся:", o:["раздел территории между наследниками","уменьшение власти местных князей","возвышение роли сельской общины","централизация власти в Киеве","ослабление власти киевского князя"], a:[0,4]},
+  {t:"multi", q:"Укажите характерные черты развития культуры белорусских земель в IX–XIII вв.", o:["строительство замков-кастелей","создание рукописных книг при монастырях и церквях","появление монументальной архитектуры","появление батлеечного театра","распространение кириллической письменности"], a:[1,2,4]},
+
+  {t:"match", q:"Установите соответствие.", pairs:[
+    ["закупы","временно зависимые"],
+    ["смерды","частично свободные (платили налог князю за землю)"],
+    ["«люди»","полностью свободные общинники"],
+    ["холопы","совершенно бесправная категория населения"]]},
+  {t:"match", q:"Установите соответствие.", pairs:[
+    ["Александр Невский","Ледовое побоище на Чудском озере"],
+    ["Ярослав Владимирович","составление письменного свода законов «Русская правда»"],
+    ["Брячислав Изяславич","присоединение Витебска к Полоцкому княжеству"]]},
+  {t:"match", q:"Установите соответствие.", pairs:[
+    ["Всеслав Брячиславич","участвовал в битве на реке Немиге в 1067 г."],
+    ["Брячислав Изяславич","присоединил волоки между Днепром и Западной Двиной к Полоцкому княжеству"],
+    ["Рогволод","первый полоцкий князь"]]},
+  {t:"match", q:"Установите соответствие: год и событие.", pairs:[
+    ["843 г.","внуки Карла Великого официально разделили Франкскую империю на три государства"],
+    ["882 г.","создание Древнерусского государства"],
+    ["1242 г.","битва на Чудском озере"],
+    ["1021 г.","поход Брячислава Изяславича на Новгород"],
+    ["1096 г.","начало крестовых походов на Ближний Восток"]]},
+
+  {t:"num", q:"Укажите дату (год) события, которое произошло последним среди перечисленных:\n1) поход полоцкого князя Брячислава Изяславича на Новгород;\n2) начало монгольского нашествия на земли Древней Руси;\n3) изготовление мастером-ювелиром Лазарем Богшей креста по заказу Евфросинии Полоцкой;\n4) захват Полоцкой земли и высылка местных князей в Византию киевским князем Мстиславом Великим.", hint:"Ответ — четырёхзначное число. Например: 1900.", a:"1237"},
+  {t:"num", q:"Укажите дату (год) события, которое произошло последним среди перечисленных:\n1) изготовление мастером-ювелиром Лазарем Богшей креста по заказу Евфросинии Полоцкой;\n2) основание христианской епархии в Турове;\n3) начало раздробленности в Полоцком княжестве;\n4) захват Полоцкой земли и высылка местных князей в Византию киевским князем Мстиславом Великим.", hint:"Ответ — четырёхзначное число. Например: 1900.", a:"1161"},
+  {t:"num", q:"Укажите дату (год) события, которое произошло последним среди перечисленных:\n1) начало противостояния Полоцкого княжества с крестоносцами;\n2) начало княжения Брячислава в Полоцке;\n3) начало раздробленности Полоцкого княжества;\n4) образование Священной Римской империи.", hint:"Ответ — четырёхзначное число. Например: 1900.", a:"1203"}
+];
+
+const app = document.getElementById("app");
+let order, pos, score, wrong;
+
+function h(tag, cls, text){
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+function shuffle(arr){
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function start(list){
+  order = shuffle(list);
+  pos = 0; score = 0; wrong = [];
+  show();
+}
+
+function show(){
+  if (pos >= order.length) return finish();
+  const q = order[pos];
+  app.innerHTML = "";
+
+  const top = h("div", "top");
+  top.append(h("span", "", "Вопрос " + (pos + 1) + " из " + order.length));
+  const sc = h("span", "", "Верно: " + score);
+  top.append(sc);
+  const bar = h("div", "bar");
+  const fill = h("i");
+  fill.style.width = (pos / order.length * 100) + "%";
+  bar.append(fill);
+
+  const card = h("div", "card");
+  const qEl = h("p", "q", q.q);
+  qEl.style.whiteSpace = "pre-line";
+  card.append(qEl);
+
+  const foot = h("div", "btns");
+  const verdict = h("div", "verdict");
+  let locked = false;
+
+  function finishQuestion(ok){
+    locked = true;
+    if (ok){ score++; } else { wrong.push(q); }
+    sc.textContent = "Верно: " + score;
+    verdict.textContent = ok ? "Верно" : "Неверно";
+    verdict.className = "verdict " + (ok ? "ok" : "bad");
+    foot.innerHTML = "";
+    const next = h("button", "btn", pos + 1 >= order.length ? "Показать результат" : "Дальше");
+    next.type = "button";
+    next.onclick = () => { pos++; show(); };
+    foot.append(next);
+    next.focus({preventScroll:false});
+  }
+
+  if (q.note) card.append(h("p", "note", q.note));
+
+  if (q.t === "single"){
+    const box = h("div", "opts");
+    const items = shuffle(q.o.map((t, i) => ({t, i})));
+    const btns = [];
+    items.forEach(it => {
+      const b = h("button", "opt");
+      b.type = "button";
+      b.append(h("span", "mark"), h("span", "", it.t));
+      b.onclick = () => {
+        if (locked) return;
+        btns.forEach(x => { x.b.disabled = true; if (x.i === q.a) x.b.classList.add("ok"); });
+        if (it.i !== q.a) b.classList.add("bad");
+        finishQuestion(it.i === q.a);
+      };
+      btns.push({b, i: it.i});
+      box.append(b);
+    });
+    card.append(box);
+  }
+
+  if (q.t === "multi"){
+    card.append(h("p", "hint", "Отметь все верные ответы и нажми «Проверить»."));
+    const box = h("div", "opts multi");
+    const items = shuffle(q.o.map((t, i) => ({t, i})));
+    const sel = new Set();
+    const btns = [];
+    const check = h("button", "btn", "Проверить");
+    check.type = "button";
+    check.disabled = true;
+    items.forEach(it => {
+      const b = h("button", "opt");
+      b.type = "button";
+      b.append(h("span", "mark"), h("span", "", it.t));
+      b.onclick = () => {
+        if (locked) return;
+        if (sel.has(it.i)){ sel.delete(it.i); b.classList.remove("sel"); }
+        else { sel.add(it.i); b.classList.add("sel"); }
+        check.disabled = sel.size === 0;
+      };
+      btns.push({b, i: it.i});
+      box.append(b);
+    });
+    check.onclick = () => {
+      if (locked) return;
+      let ok = true;
+      btns.forEach(x => {
+        const right = q.a.includes(x.i), chosen = sel.has(x.i);
+        x.b.disabled = true;
+        x.b.classList.remove("sel");
+        if (right && chosen) x.b.classList.add("ok");
+        else if (right && !chosen){ x.b.classList.add("miss"); ok = false; x.b.lastChild.append(h("span", "tag", "это тоже верный ответ")); }
+        else if (!right && chosen){ x.b.classList.add("bad"); ok = false; }
+      });
+      finishQuestion(ok);
+    };
+    card.append(box);
+    foot.append(check);
+  }
+
+  if (q.t === "match"){
+    card.append(h("p", "hint", "Для каждой строки выбери подходящий вариант и нажми «Проверить»."));
+    const rights = shuffle(q.pairs.map(p => p[1]));
+    const rows = h("div", "rows");
+    const sels = [];
+    shuffle(q.pairs).forEach(p => {
+      const row = h("div", "row");
+      row.append(h("div", "l", p[0]));
+      const s = h("select");
+      s.setAttribute("aria-label", p[0]);
+      const ph = h("option", "", "— выбери —");
+      ph.value = "";
+      s.append(ph);
+      rights.forEach(r => { const o = h("option", "", r); o.value = r; s.append(o); });
+      row.append(s);
+      sels.push({row, s, right: p[1]});
+      rows.append(row);
+    });
+    const check = h("button", "btn", "Проверить");
+    check.type = "button";
+    check.disabled = true;
+    const upd = () => { check.disabled = sels.some(x => !x.s.value); };
+    sels.forEach(x => x.s.addEventListener("change", upd));
+    check.onclick = () => {
+      if (locked) return;
+      let ok = true;
+      sels.forEach(x => {
+        x.s.disabled = true;
+        if (x.s.value === x.right) x.row.classList.add("ok");
+        else {
+          ok = false;
+          x.row.classList.add("bad");
+          x.row.append(h("div", "fix", "Верно: " + x.right));
+        }
+      });
+      finishQuestion(ok);
+    };
+    card.append(rows);
+    foot.append(check);
+  }
+
+  if (q.t === "num"){
+    if (q.hint) card.append(h("p", "hint", q.hint));
+    const inp = h("input");
+    inp.type = "text";
+    inp.setAttribute("inputmode", "numeric");
+    inp.setAttribute("autocomplete", "off");
+    inp.setAttribute("aria-label", "Ответ");
+    inp.placeholder = "Введи год";
+    const wrap = h("div", "opts");
+    wrap.append(inp);
+    const check = h("button", "btn", "Проверить");
+    check.type = "button";
+    check.disabled = true;
+    inp.addEventListener("input", () => { check.disabled = inp.value.trim() === ""; });
+    inp.addEventListener("keydown", e => { if (e.key === "Enter" && !check.disabled) check.click(); });
+    check.onclick = () => {
+      if (locked) return;
+      const ok = inp.value.trim() === q.a;
+      inp.disabled = true;
+      inp.style.borderColor = ok ? "var(--ok)" : "var(--bad)";
+      if (!ok) wrap.append(h("div", "fix", "Верный ответ: " + q.a));
+      finishQuestion(ok);
+    };
+    card.append(wrap);
+    foot.append(check);
+  }
+
+  card.append(verdict, foot);
+  app.append(top, bar, card);
+  window.scrollTo(0, 0);
+}
+
+function finish(){
+  app.innerHTML = "";
+  const total = order.length;
+  const pct = Math.round(score / total * 100);
+  const card = h("div", "card final");
+  card.append(h("h1", "", "Тест пройден"));
+  card.append(h("div", "big", score + " из " + total));
+  card.append(h("p", "", pct + "% верных ответов"));
+  const btns = h("div", "btns");
+  if (wrong.length){
+    const r = h("button", "btn", "Повторить ошибки (" + wrong.length + ")");
+    r.type = "button";
+    const list = wrong.slice();
+    r.onclick = () => start(list);
+    btns.append(r);
+  }
+  const again = h("button", "btn" + (wrong.length ? " alt" : ""), "Пройти заново");
+  again.type = "button";
+  again.onclick = () => start(QUESTIONS);
+  btns.append(again);
+  card.append(btns);
+  app.append(card);
+  window.scrollTo(0, 0);
+}
+
+start(QUESTIONS);
+</script>
+</body>
+</html>
